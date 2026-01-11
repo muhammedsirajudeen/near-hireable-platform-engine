@@ -17,7 +17,7 @@ export interface IAuthTokens {
 
 @injectable()
 export class AuthService {
-   constructor(@inject(UserService) private userService: UserService, @inject(JwtService) private jwtService: JwtService) {}
+   constructor(@inject(UserService) private userService: UserService, @inject(JwtService) private jwtService: JwtService) { }
 
    async adminLogin(password: string): Promise<{ tokens: IAuthTokens; user: IUserDto }> {
       const adminPassword = process.env.ADMIN_PASSWORD;
@@ -139,4 +139,50 @@ export class AuthService {
       const User = (await import("@/models/User")).default;
       await User.findByIdAndUpdate(userId, { role });
    }
+
+   @ConnectDB()
+   async googleAuth(credential: string): Promise<{ tokens: IAuthTokens; user: IUserDto }> {
+      const { OAuth2Client } = await import("google-auth-library");
+      const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+
+      // Verify the Google token
+      const ticket = await client.verifyIdToken({
+         idToken: credential,
+         audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+         throw new RouteError("Invalid Google token", HttpStatusCode.Unauthorized);
+      }
+
+      const { email, name, picture } = payload;
+
+      // Check if email is authorized
+      const authorizedEmail = await AuthorisedEmail.findOne({
+         email: email.toLowerCase()
+      }).lean();
+
+      if (!authorizedEmail) {
+         throw new RouteError(
+            "Email not authorized. Please contact admin to get access.",
+            HttpStatusCode.Forbidden
+         );
+      }
+
+      // Find or create user
+      let user = await this.userService.findUserByEmail(email);
+
+      if (!user) {
+         user = await this.userService.createUser({
+            name: name || email.split("@")[0],
+            email,
+         });
+      }
+
+      const tokens = this.generateTokens(user.id, user.role);
+
+      return { tokens, user };
+   }
 }
+

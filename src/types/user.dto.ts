@@ -6,6 +6,7 @@ export interface IUserDto {
    name: string;
    email: string;
    role: UserRole;
+   prdStatus?: "none" | "pending" | "approved";
    createdAt: Date;
    updatedAt: Date;
 }

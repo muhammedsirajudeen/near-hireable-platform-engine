@@ -6,6 +6,7 @@ export interface IUserDocument extends Document {
    email: string;
    password?: string;
    role: UserRole;
+   prdStatus?: "none" | "pending" | "approved";
    createdAt: Date;
    updatedAt: Date;
 }
@@ -32,6 +33,11 @@ const UserSchema = new Schema<IUserDocument>(
          type: String,
          enum: Object.values(UserRole),
          default: UserRole.USER,
+      },
+      prdStatus: {
+         type: String,
+         enum: ["none", "pending", "approved"],
+         default: "none",
       },
    },
    {

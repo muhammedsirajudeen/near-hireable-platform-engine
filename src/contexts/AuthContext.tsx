@@ -9,6 +9,7 @@ interface User {
    name: string;
    email: string;
    role: UserRole;
+   prdStatus?: "none" | "pending" | "approved";
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
    isAuthenticated: boolean;
    login: (email: string, password: string) => Promise<void>;
    signup: (name: string, email: string, password: string) => Promise<void>;
+   googleLogin: (credential: string) => Promise<void>;
    adminLogin: (password: string) => Promise<void>;
    logout: () => Promise<void>;
    checkAuth: () => Promise<void>;
@@ -86,6 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
    };
 
+   const googleLogin = async (credential: string) => {
+      const response = await axiosInstance.post("/auth/google", { credential });
+      if (response.data.success) {
+         setUser(response.data.user);
+         setIsAuthenticated(true);
+      }
+   };
+
    return (
       <AuthContext.Provider
          value={{
@@ -94,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isAuthenticated,
             login,
             signup,
+            googleLogin,
             adminLogin,
             logout,
             checkAuth,

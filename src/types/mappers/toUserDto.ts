@@ -7,6 +7,7 @@ export function toUserDto(user: IUserDocument): IUserDto {
       name: user.name,
       email: user.email,
       role: user.role,
+      prdStatus: user.prdStatus || "none",
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
    };

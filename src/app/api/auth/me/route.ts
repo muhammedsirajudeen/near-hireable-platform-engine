@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
                name: user.name,
                email: user.email,
                role: user.role,
+               prdStatus: user.prdStatus || "none",
             },
          },
          { status: 200 }

@@ -2,114 +2,201 @@
 
 import PublicRoute from "@/components/PublicRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import Link from "next/link";
+import axiosInstance from "@/lib/axiosInstance";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-export default function SigninPage() {
-   const [formData, setFormData] = useState({
-      email: "",
-      password: "",
-   });
+declare global {
+   interface Window {
+      google?: {
+         accounts: {
+            id: {
+               initialize: (config: {
+                  client_id: string;
+                  callback: (response: { credential: string }) => void;
+               }) => void;
+               renderButton: (
+                  element: HTMLElement,
+                  config: {
+                     theme?: string;
+                     size?: string;
+                     width?: number;
+                     text?: string;
+                     shape?: string;
+                  }
+               ) => void;
+            };
+         };
+      };
+   }
+}
+
+export default function SignInPage() {
    const [error, setError] = useState("");
    const [loading, setLoading] = useState(false);
-   const { login } = useAuth();
+   const { googleLogin } = useAuth();
    const router = useRouter();
 
-   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setError("");
-      setLoading(true);
+   const handleGoogleResponse = useCallback(
+      async (response: { credential: string }) => {
+         setError("");
+         setLoading(true);
 
-      try {
-         await login(formData.email, formData.password);
-         router.push("/");
-      } catch (err) {
-         setError(err instanceof Error && "response" in err ? (err as Error & { response?: { data?: { error?: string } } }).response?.data?.error || "Invalid credentials" : "Invalid credentials");
-      } finally {
-         setLoading(false);
-      }
-   };
+         try {
+            await googleLogin(response.credential);
+
+            // Check user's PRD status and redirect accordingly
+            const userResponse = await axiosInstance.get("/auth/me");
+            const user = userResponse.data.user;
+
+            if (user.prdStatus === "approved") {
+               router.push("/dashboard");
+            } else {
+               router.push("/prd");
+            }
+         } catch (err: unknown) {
+            console.error("Google login error:", err);
+
+            // Check if it's an authorization error (403)
+            if (err && typeof err === "object" && "response" in err) {
+               const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+
+               if (axiosError.response?.status === 403) {
+                  // User is not registered for the program
+                  setError("not_registered");
+               } else {
+                  setError(axiosError.response?.data?.error || "authentication_failed");
+               }
+            } else {
+               setError("authentication_failed");
+            }
+         } finally {
+            setLoading(false);
+         }
+      },
+      [googleLogin, router]
+   );
+
+   useEffect(() => {
+      // Load Google Identity Services script
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+
+      script.onload = () => {
+         if (window.google) {
+            window.google.accounts.id.initialize({
+               client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+               callback: handleGoogleResponse,
+            });
+
+            const buttonDiv = document.getElementById("google-signin-button");
+            if (buttonDiv) {
+               window.google.accounts.id.renderButton(buttonDiv, {
+                  theme: "filled_black",
+                  size: "large",
+                  width: 380,
+                  text: "continue_with",
+                  shape: "pill",
+               });
+            }
+         }
+      };
+
+      return () => {
+         document.body.removeChild(script);
+      };
+   }, [handleGoogleResponse]);
 
    return (
       <PublicRoute>
-         <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4">
+
+         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background/95 to-primary/5 px-4">
             <div className="max-w-md w-full">
                {/* Card */}
-               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
+               <div className="bg-card/50 backdrop-blur-sm rounded-2xl shadow-xl border border-border p-8 md:p-10">
                   {/* Header */}
                   <div className="text-center mb-8">
-                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-purple-500 to-blue-600 mb-4">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary mb-4">
+                        <svg className="w-8 h-8 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                      </div>
-                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h1>
-                     <p className="text-gray-600 dark:text-gray-400">Sign in to your account</p>
+                     <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Welcome Back</h1>
+                     <p className="text-muted-foreground">Sign in to your account</p>
                   </div>
 
-                  {/* Form */}
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                     {error && (
-                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-                        </div>
-                     )}
-
-                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                           Email Address
-                        </label>
-                        <input
-                           type="email"
-                           id="email"
-                           value={formData.email}
-                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                           className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                           placeholder="you@example.com"
-                           required
-                        />
-                     </div>
-
-                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                           Password
-                        </label>
-                        <input
-                           type="password"
-                           id="password"
-                           value={formData.password}
-                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                           className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                           placeholder="Enter your password"
-                           required
-                        />
-                     </div>
-
-                     <button type="submit" disabled={loading} className="w-full bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
-                        {loading ? (
-                           <span className="flex items-center justify-center">
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Signing in...
-                           </span>
+                  {/* Error Message */}
+                  {error && (
+                     <div className="mb-6">
+                        {error === "not_registered" ? (
+                           <div className="bg-card border-2 border-primary/20 rounded-xl p-6 space-y-4">
+                              <div className="flex items-start space-x-3">
+                                 <div className="flex-shrink-0">
+                                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                 </div>
+                                 <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-card-foreground mb-2">
+                                       Not Registered Yet
+                                    </h3>
+                                    <p className="text-muted-foreground mb-4">
+                                       Your email isn't registered for the Near Hireable Engine program yet. To get access, please contact our team.
+                                    </p>
+                                    <div className="bg-muted rounded-lg p-4 space-y-3">
+                                       <p className="text-sm font-medium text-card-foreground">Get Access:</p>
+                                       <a
+                                          href="https://twitter.com/messages/compose?recipient_id=YOUR_TWITTER_ID"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center space-x-2 text-primary hover:text-primary-hover transition-colors"
+                                       >
+                                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                             <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+                                          </svg>
+                                          <span className="text-sm font-medium">DM us on Twitter/X</span>
+                                       </a>
+                                       <p className="text-xs text-muted-foreground">
+                                          We'll review your request and add your email to the program.
+                                       </p>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
                         ) : (
-                           "Sign In"
+                           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                              <p className="text-sm text-destructive">
+                                 {error === "authentication_failed"
+                                    ? "Authentication failed. Please try again."
+                                    : error}
+                              </p>
+                           </div>
                         )}
-                     </button>
-                  </form>
+                     </div>
+                  )}
 
-                  {/* Footer */}
-                  <div className="mt-6 text-center">
-                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Don't have an account?{" "}
-                        <Link href="/signup" className="text-purple-600 dark:text-purple-400 hover:underline font-medium">
-                           Sign up
-                        </Link>
-                     </p>
+                  {/* Loading State */}
+                  {loading && (
+                     <div className="flex items-center justify-center py-4 mb-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <span className="ml-3 text-muted-foreground">Signing in...</span>
+                     </div>
+                  )}
+
+                  {/* Google Sign In Button */}
+                  <div className="flex justify-center">
+                     <div id="google-signin-button"></div>
                   </div>
+
+                  {/* Info Text */}
+                  <p className="text-center text-sm text-muted-foreground mt-6">
+                     Only authorized emails can sign in.
+                     <br />
+                     Contact admin if you need access.
+                  </p>
                </div>
             </div>
          </div>

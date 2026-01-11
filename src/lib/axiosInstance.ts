@@ -45,6 +45,11 @@ axiosInstance.interceptors.response.use(
    async (error: AxiosError) => {
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+      // Ignore if no config (shouldn't happen)
+      if (!originalRequest) {
+         return Promise.reject(error);
+      }
+
       // If error is 401 and we haven't retried yet
       if (error.response?.status === 401 && !originalRequest._retry) {
          if (isRefreshing) {
@@ -53,6 +58,9 @@ axiosInstance.interceptors.response.use(
                failedQueue.push({ resolve, reject });
             })
                .then(() => {
+                  // When resolved, retry the original request
+                  // We mark it as retried to prevent infinite loops if it fails again
+                  originalRequest._retry = true;
                   return axiosInstance(originalRequest);
                })
                .catch((err) => {
@@ -65,19 +73,27 @@ axiosInstance.interceptors.response.use(
 
          try {
             // Try to refresh the token
-            await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+            // We use the global axios instance to avoid circular interception, 
+            // but ensure we send credentials (cookies)
+            await axios.post("/api/auth/refresh", {}, {
+               baseURL: process.env.NEXT_PUBLIC_API_URL || "", // Ensure absolute URL if needed, though usually relative works on client
+               withCredentials: true
+            });
 
+            // If we get here, refresh was successful
             processQueue(null);
             isRefreshing = false;
 
             // Retry the original request
             return axiosInstance(originalRequest);
          } catch (refreshError) {
+            // If refresh fails, reject all queued requests
             processQueue(refreshError as Error);
             isRefreshing = false;
 
-            // Redirect to login if refresh fails
+            // Redirect to login if refresh fails and we are on client side
             if (typeof window !== "undefined") {
+               // Optional: Clear any local state if needed
                window.location.href = "/signin";
             }
 

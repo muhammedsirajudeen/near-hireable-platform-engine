@@ -1,5 +1,7 @@
+import RouteError from "@/error/routeError";
 import { IJwtPayload } from "@/lib/jwt.util";
 import { UserRole } from "@/types/enums/role.enum";
+import { HttpStatusCode } from "axios";
 import { NextRequest } from "next/server";
 
 export interface IAuthenticatedRequest extends NextRequest {
@@ -13,14 +15,14 @@ export async function authenticateRequest(request: NextRequest): Promise<IJwtPay
    const accessToken = request.cookies.get("accessToken")?.value;
 
    if (!accessToken) {
-      throw new Error("Authentication required");
+      throw new RouteError("Authentication required", HttpStatusCode.Unauthorized);
    }
 
    try {
       const payload = jwtService.verifyAccessToken(accessToken);
       return payload;
    } catch (error) {
-      throw new Error("Invalid or expired token");
+      throw new RouteError("Invalid or expired token", HttpStatusCode.Unauthorized);
    }
 }
 
@@ -28,7 +30,7 @@ export async function requireAdmin(request: NextRequest): Promise<IJwtPayload> {
    const user = await authenticateRequest(request);
 
    if (user.role !== UserRole.ADMIN) {
-      throw new Error("Admin access required");
+      throw new RouteError("Admin access required", HttpStatusCode.Forbidden);
    }
 
    return user;

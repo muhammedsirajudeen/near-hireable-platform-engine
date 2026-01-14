@@ -46,6 +46,7 @@ const NO_REFRESH_ENDPOINTS = [
    "/auth/logout",
    "/auth/admin/login",
    "/auth/google",
+   "/auth/me", // Don't auto-refresh on /me - let AuthContext handle it
 ];
 
 const shouldSkipRefresh = (url: string | undefined): boolean => {

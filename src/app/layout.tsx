@@ -1,4 +1,6 @@
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ChatProvider } from "@/contexts/ChatContext";
+import FloatingChatWidget from "@/components/chat/FloatingChatWidget";
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
@@ -22,7 +24,12 @@ export default function RootLayout({
    return (
       <html lang="en" className="dark" suppressHydrationWarning>
          <body className={`${poppins.variable} antialiased`}>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+               <ChatProvider>
+                  {children}
+                  <FloatingChatWidget />
+               </ChatProvider>
+            </AuthProvider>
          </body>
       </html>
    );

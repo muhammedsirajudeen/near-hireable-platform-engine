@@ -1,53 +1,88 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import axiosInstance from "@/lib/axiosInstance";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface AdminSidebarProps {
     collapsed?: boolean;
     onToggle?: () => void;
 }
 
-const navItems = [
-    {
-        name: "Dashboard",
-        href: "/admin/dashboard",
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-        ),
-    },
-    {
-        name: "PRD Management",
-        href: "/admin/prds",
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-        ),
-    },
-    {
-        name: "User Management",
-        href: "/admin/users",
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-        ),
-    },
-];
-
 export default function AdminSidebar({ collapsed = false }: AdminSidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuth();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Fetch unread message count
+    useEffect(() => {
+        const fetchUnread = async () => {
+            try {
+                const response = await axiosInstance.get("/admin/chat/conversations");
+                if (response.data.success) {
+                    const total = response.data.conversations.reduce(
+                        (sum: number, conv: { unreadCount: number }) => sum + conv.unreadCount,
+                        0
+                    );
+                    setUnreadCount(total);
+                }
+            } catch (error) {
+                console.error("Error fetching unread count:", error);
+            }
+        };
+
+        fetchUnread();
+        const intervalId = setInterval(fetchUnread, 10000);
+        return () => clearInterval(intervalId);
+    }, []);
 
     const handleLogout = async () => {
         await logout();
         router.push("/admin/login");
     };
+
+    const navItems = [
+        {
+            name: "Dashboard",
+            href: "/admin/dashboard",
+            icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            ),
+        },
+        {
+            name: "PRD Management",
+            href: "/admin/prds",
+            icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            ),
+        },
+        {
+            name: "Messages",
+            href: "/admin/chat",
+            badge: unreadCount,
+            icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+            ),
+        },
+        {
+            name: "User Management",
+            href: "/admin/users",
+            icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            ),
+        },
+    ];
 
     return (
         <aside className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
@@ -68,18 +103,28 @@ export default function AdminSidebar({ collapsed = false }: AdminSidebarProps) {
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-2">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
                                 ? "bg-primary text-white shadow-md"
                                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 }`}
                         >
-                            <span className="flex-shrink-0">{item.icon}</span>
-                            {!collapsed && <span className="font-medium">{item.name}</span>}
+                            <div className="flex items-center space-x-3">
+                                <span className="flex-shrink-0">{item.icon}</span>
+                                {!collapsed && <span className="font-medium">{item.name}</span>}
+                            </div>
+                            {!collapsed && item.badge !== undefined && item.badge > 0 && (
+                                <span className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold rounded-full ${isActive ? "bg-white text-primary" : "bg-red-500 text-white"}`}>
+                                    {item.badge > 99 ? "99+" : item.badge}
+                                </span>
+                            )}
+                            {collapsed && item.badge !== undefined && item.badge > 0 && (
+                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            )}
                         </Link>
                     );
                 })}

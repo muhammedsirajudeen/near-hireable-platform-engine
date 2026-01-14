@@ -91,10 +91,10 @@ axiosInstance.interceptors.response.use(
             processQueue(refreshError as Error);
             isRefreshing = false;
 
-            // Redirect to login if refresh fails and we are on client side
+            // Redirect to appropriate login page based on current path
             if (typeof window !== "undefined") {
-               // Optional: Clear any local state if needed
-               window.location.href = "/signin";
+               const isAdminPath = window.location.pathname.startsWith("/admin");
+               window.location.href = isAdminPath ? "/admin/login" : "/signin";
             }
 
             return Promise.reject(refreshError);

@@ -19,8 +19,9 @@ axiosInstance.interceptors.request.use(
    }
 );
 
-// Response interceptor
+// Response interceptor for handling token refresh
 let isRefreshing = false;
+let refreshPromise: Promise<void> | null = null;
 let failedQueue: Array<{
    resolve: (value?: unknown) => void;
    reject: (reason?: unknown) => void;
@@ -34,8 +35,22 @@ const processQueue = (error: Error | null = null) => {
          prom.resolve();
       }
    });
-
    failedQueue = [];
+};
+
+// Endpoints that should not trigger refresh logic
+const NO_REFRESH_ENDPOINTS = [
+   "/auth/refresh",
+   "/auth/signin",
+   "/auth/signup",
+   "/auth/logout",
+   "/auth/admin/login",
+   "/auth/google",
+];
+
+const shouldSkipRefresh = (url: string | undefined): boolean => {
+   if (!url) return false;
+   return NO_REFRESH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 };
 
 axiosInstance.interceptors.response.use(
@@ -50,53 +65,66 @@ axiosInstance.interceptors.response.use(
          return Promise.reject(error);
       }
 
+      // Don't retry for auth endpoints - they should fail normally
+      if (shouldSkipRefresh(originalRequest.url)) {
+         return Promise.reject(error);
+      }
+
       // If error is 401 and we haven't retried yet
       if (error.response?.status === 401 && !originalRequest._retry) {
-         if (isRefreshing) {
-            // If already refreshing, queue this request
-            return new Promise((resolve, reject) => {
-               failedQueue.push({ resolve, reject });
-            })
-               .then(() => {
-                  // When resolved, retry the original request
-                  // We mark it as retried to prevent infinite loops if it fails again
-                  originalRequest._retry = true;
-                  return axiosInstance(originalRequest);
-               })
-               .catch((err) => {
-                  return Promise.reject(err);
-               });
+         if (isRefreshing && refreshPromise) {
+            // If already refreshing, wait for the current refresh to complete
+            try {
+               await refreshPromise;
+               // Refresh successful, retry the original request
+               originalRequest._retry = true;
+               return axiosInstance(originalRequest);
+            } catch (refreshError) {
+               return Promise.reject(refreshError);
+            }
          }
 
          originalRequest._retry = true;
          isRefreshing = true;
 
+         // Create a new refresh promise
+         refreshPromise = (async () => {
+            try {
+               // Try to refresh the token using plain fetch to avoid interceptor loops
+               const response = await fetch("/api/auth/refresh", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: {
+                     "Content-Type": "application/json",
+                  },
+               });
+
+               if (!response.ok) {
+                  throw new Error("Refresh failed");
+               }
+
+               // Refresh successful, process queued requests
+               processQueue(null);
+            } catch (refreshError) {
+               // Refresh failed, reject all queued requests
+               processQueue(refreshError as Error);
+               throw refreshError;
+            } finally {
+               isRefreshing = false;
+               refreshPromise = null;
+            }
+         })();
+
          try {
-            // Try to refresh the token
-            // We use the global axios instance to avoid circular interception, 
-            // but ensure we send credentials (cookies)
-            await axios.post("/api/auth/refresh", {}, {
-               baseURL: process.env.NEXT_PUBLIC_API_URL || "", // Ensure absolute URL if needed, though usually relative works on client
-               withCredentials: true
-            });
-
-            // If we get here, refresh was successful
-            processQueue(null);
-            isRefreshing = false;
-
-            // Retry the original request
+            await refreshPromise;
+            // Retry the original request after successful refresh
             return axiosInstance(originalRequest);
          } catch (refreshError) {
-            // If refresh fails, reject all queued requests
-            processQueue(refreshError as Error);
-            isRefreshing = false;
-
             // Redirect to appropriate login page based on current path
             if (typeof window !== "undefined") {
                const isAdminPath = window.location.pathname.startsWith("/admin");
                window.location.href = isAdminPath ? "/admin/login" : "/signin";
             }
-
             return Promise.reject(refreshError);
          }
       }

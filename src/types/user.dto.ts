@@ -1,4 +1,3 @@
-import { IUserDocument } from "@/models/User";
 import { UserRole } from "./enums/role.enum";
 
 export interface IUserDto {

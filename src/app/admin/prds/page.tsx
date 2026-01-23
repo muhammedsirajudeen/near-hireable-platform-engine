@@ -117,7 +117,7 @@ export default function AdminPRDsPage() {
       <div className="space-y-4 pt-4">
          <div className="flex items-center justify-between">
             <div>
-               <h2 className="text-2xl font-bold tracking-tight">PRD Management</h2>
+               <h2 className="text-2xl font-bold tracking-tight text-foreground">PRD Management</h2>
                <p className="text-muted-foreground">Review and manage user PRDs</p>
             </div>
          </div>
@@ -128,31 +128,31 @@ export default function AdminPRDsPage() {
             </div>
          ) : prds.length === 0 ? (
             <div className="text-center py-12">
-               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <svg className="mx-auto h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                </svg>
-               <p className="mt-4 text-gray-600 dark:text-gray-400">No PRDs submitted yet</p>
+               <p className="mt-4 text-muted-foreground">No PRDs submitted yet</p>
             </div>
          ) : (
             <div className="space-y-4">
                {prds.map((prd) => (
-                  <div key={prd._id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div key={prd._id} className="bg-card text-card-foreground rounded-xl border border-border overflow-hidden">
                      {/* PRD Header */}
-                     <div className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" onClick={() => setExpandedPrdId(expandedPrdId === prd._id ? null : prd._id)}>
+                     <div className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setExpandedPrdId(expandedPrdId === prd._id ? null : prd._id)}>
                         <div className="flex items-center justify-between">
                            <div className="flex items-center space-x-4">
                               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                                  <span className="text-sm font-bold text-primary">{prd.userId?.name?.charAt(0).toUpperCase() || "?"}</span>
                               </div>
                               <div>
-                                 <p className="font-medium text-gray-900 dark:text-white">{prd.userId?.name || "Unknown User"}</p>
-                                 <p className="text-sm text-gray-500 dark:text-gray-400">{prd.userId?.email}</p>
+                                 <p className="font-medium text-foreground">{prd.userId?.name || "Unknown User"}</p>
+                                 <p className="text-sm text-muted-foreground">{prd.userId?.email}</p>
                               </div>
                            </div>
                            <div className="flex items-center space-x-3">
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(prd.status)}`}>{prd.status.charAt(0).toUpperCase() + prd.status.slice(1)}</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(prd.submittedAt).toLocaleDateString()}</span>
-                              <svg className={`w-5 h-5 text-gray-400 transition-transform ${expandedPrdId === prd._id ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <span className="text-xs text-muted-foreground">{new Date(prd.submittedAt).toLocaleDateString()}</span>
+                              <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedPrdId === prd._id ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
                            </div>
@@ -161,7 +161,7 @@ export default function AdminPRDsPage() {
 
                      {/* PRD Details (Expanded) */}
                      {expandedPrdId === prd._id && (
-                        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                        <div className="border-t border-border p-4 space-y-4">
                            <PRDSection title="Problem Statement" content={prd.problemStatement} />
                            <PRDSection title="Target Users" content={prd.targetUsers} />
                            <PRDSection title="Key Features" content={prd.keyFeatures} />
@@ -170,9 +170,9 @@ export default function AdminPRDsPage() {
                            {prd.additionalNotes && <PRDSection title="Additional Notes" content={prd.additionalNotes} />}
 
                            {/* Admin Notes Section */}
-                           <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                           <div className="mt-6 pt-4 border-t border-border">
                               <div className="flex items-center justify-between mb-3">
-                                 <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
+                                 <h4 className="font-semibold text-foreground flex items-center">
                                     <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                     </svg>
@@ -194,22 +194,22 @@ export default function AdminPRDsPage() {
 
                               {/* Add Note Input */}
                               {showNoteInput === prd._id && (
-                                 <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                 <div className="mb-4 p-3 bg-muted/50 rounded-lg">
                                     <textarea
                                        value={newNoteContent[prd._id] || ""}
                                        onChange={(e) => setNewNoteContent((prev) => ({ ...prev, [prd._id]: e.target.value }))}
                                        placeholder="Enter your feedback note..."
-                                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                                       className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                                        rows={2}
                                        maxLength={500}
                                     />
                                     <div className="flex items-center justify-between mt-2">
-                                       <span className="text-xs text-gray-500">{(newNoteContent[prd._id] || "").length}/500</span>
+                                       <span className="text-xs text-muted-foreground">{(newNoteContent[prd._id] || "").length}/500</span>
                                        <div className="flex space-x-2">
-                                          <button onClick={() => setShowNoteInput(null)} className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                                          <button onClick={() => setShowNoteInput(null)} className="px-3 py-1.5 text-sm text-foreground hover:bg-muted rounded-lg transition-colors">
                                              Cancel
                                           </button>
-                                          <button onClick={() => handleAddNote(prd._id)} disabled={actionLoading === `note-${prd._id}` || !newNoteContent[prd._id]?.trim()} className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                          <button onClick={() => handleAddNote(prd._id)} disabled={actionLoading === `note-${prd._id}` || !newNoteContent[prd._id]?.trim()} className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                              {actionLoading === `note-${prd._id}` ? "Adding..." : "Add"}
                                           </button>
                                        </div>
@@ -221,13 +221,13 @@ export default function AdminPRDsPage() {
                               {prd.adminNotes && prd.adminNotes.length > 0 ? (
                                  <ul className="space-y-2">
                                     {prd.adminNotes.map((note) => (
-                                       <li key={note.id} className="flex items-start space-x-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg group">
+                                       <li key={note.id} className="flex items-start space-x-3 p-2 bg-muted/50 rounded-lg group">
                                           <span className="w-2 h-2 mt-2 rounded-full bg-primary shrink-0"></span>
                                           <div className="flex-1 min-w-0">
-                                             <p className="text-sm text-gray-700 dark:text-gray-300">{note.content}</p>
-                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(note.createdAt).toLocaleString()}</p>
+                                             <p className="text-sm text-foreground">{note.content}</p>
+                                             <p className="text-xs text-muted-foreground mt-1">{new Date(note.createdAt).toLocaleString()}</p>
                                           </div>
-                                          <button onClick={() => handleDeleteNote(prd._id, note.id)} disabled={actionLoading === `delete-${note.id}`} className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-all">
+                                          <button onClick={() => handleDeleteNote(prd._id, note.id)} disabled={actionLoading === `delete-${note.id}`} className="opacity-0 group-hover:opacity-100 p-1 text-destructive hover:bg-destructive/10 rounded transition-all">
                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                              </svg>
@@ -236,12 +236,12 @@ export default function AdminPRDsPage() {
                                     ))}
                                  </ul>
                               ) : (
-                                 <p className="text-sm text-gray-500 dark:text-gray-400 italic">No notes yet</p>
+                                 <p className="text-sm text-muted-foreground italic">No notes yet</p>
                               )}
                            </div>
 
                            {/* Action Buttons */}
-                           <div className="flex items-center space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                           <div className="flex items-center space-x-3 pt-4 border-t border-border">
                               <button
                                  onClick={() => handleStatusUpdate(prd._id, "approved")}
                                  disabled={actionLoading === prd._id || prd.status === "approved"}
@@ -252,7 +252,11 @@ export default function AdminPRDsPage() {
                                  </svg>
                                  <span>{actionLoading === prd._id ? "Processing..." : "Approve"}</span>
                               </button>
-                              <button onClick={() => handleStatusUpdate(prd._id, "rejected")} disabled={actionLoading === prd._id || prd.status === "rejected"} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                              <button
+                                 onClick={() => handleStatusUpdate(prd._id, "rejected")}
+                                 disabled={actionLoading === prd._id || prd.status === "rejected"}
+                                 className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              >
                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                  </svg>
@@ -272,8 +276,8 @@ export default function AdminPRDsPage() {
 function PRDSection({ title, content }: { title: string; content: string }) {
    return (
       <div>
-         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">{title}</h4>
-         <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{content}</p>
+         <h4 className="text-sm font-semibold text-foreground mb-1">{title}</h4>
+         <p className="text-muted-foreground whitespace-pre-wrap">{content}</p>
       </div>
    );
 }

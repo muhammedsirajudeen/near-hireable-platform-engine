@@ -1,7 +1,10 @@
 "use client";
 
-import AdminLayout from "@/components/admin/AdminLayout";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import axiosInstance from "@/lib/axiosInstance";
+import { ArrowLeft, Send } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,7 +36,6 @@ export default function AdminConversationPage() {
    const [error, setError] = useState<string | null>(null);
 
    const messagesEndRef = useRef<HTMLDivElement>(null);
-   const inputRef = useRef<HTMLInputElement>(null);
 
    const fetchMessages = async () => {
       try {
@@ -89,70 +91,74 @@ export default function AdminConversationPage() {
    };
 
    return (
-      <AdminLayout>
-         <div className="flex flex-col h-[calc(100vh-4rem)]">
-            {/* Header */}
-            <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-               <button onClick={() => router.push("/admin/chat")} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-               </button>
-               {user ? (
-                  <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">{user.name?.charAt(0).toUpperCase() || "U"}</span>
-                     </div>
-                     <div>
-                        <h2 className="font-semibold text-gray-900 dark:text-white">{user.name}</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
-                     </div>
+      <div className="flex flex-col h-full bg-background">
+         {/* Header */}
+         <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-card/50 backdrop-blur supports-backdrop-filter:bg-background/60">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/admin/chat")} className="shrink-0 md:hidden">
+               <ArrowLeft className="w-5 h-5" />
+            </Button>
+            {user ? (
+               <div className="flex items-center gap-3">
+                  <Avatar>
+                     <AvatarFallback className="bg-primary/10 text-primary font-bold">{user.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                     <h2 className="font-semibold text-foreground leading-none">{user.name}</h2>
+                     <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
                   </div>
-               ) : (
-                  <div className="h-10 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-               )}
-            </div>
+               </div>
+            ) : (
+               <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
+                  <div className="space-y-2">
+                     <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                     <div className="h-3 w-48 bg-muted rounded animate-pulse" />
+                  </div>
+               </div>
+            )}
+         </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50 dark:bg-gray-900">
-               {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+         {/* Messages */}
+         <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {isLoading ? (
+               <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+               </div>
+            ) : error ? (
+               <div className="flex items-center justify-center h-full">
+                  <p className="text-destructive font-medium">{error}</p>
+               </div>
+            ) : messages.length === 0 ? (
+               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                  <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+                     <Send className="w-8 h-8 text-muted-foreground/50 ml-1" />
                   </div>
-               ) : error ? (
-                  <div className="text-center py-12">
-                     <p className="text-red-500">{error}</p>
-                  </div>
-               ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-                     <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                     </svg>
-                     <p>No messages in this conversation</p>
-                  </div>
-               ) : (
-                  <>
-                     {messages.map((msg) => (
-                        <div key={msg.id} className={`flex ${msg.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
-                           <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl ${msg.senderRole === "admin" ? "bg-primary text-white rounded-br-md" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-bl-md"}`}>
-                              <p className="whitespace-pre-wrap wrap-break-word">{msg.message}</p>
-                              <p className={`text-[10px] mt-1 ${msg.senderRole === "admin" ? "text-white/70" : "text-gray-400"}`}>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
-                           </div>
+                  <p>No messages in this conversation</p>
+               </div>
+            ) : (
+               <>
+                  {messages.map((msg) => (
+                     <div key={msg.id} className={`flex ${msg.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[70%] px-4 py-3 rounded-2xl ${msg.senderRole === "admin" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
+                           <p className="whitespace-pre-wrap wrap-break-word leading-relaxed">{msg.message}</p>
+                           <p className={`text-[10px] mt-1.5 ${msg.senderRole === "admin" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
                         </div>
-                     ))}
-                     <div ref={messagesEndRef} />
-                  </>
-               )}
-            </div>
+                     </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+               </>
+            )}
+         </div>
 
-            {/* Input */}
-            <form onSubmit={handleSubmit} className="flex items-center gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-               <input ref={inputRef} type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Type a message..." className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white" disabled={isSending} maxLength={2000} />
-               <button type="submit" disabled={!inputValue.trim() || isSending} className="px-6 py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium">
-                  {isSending ? "Sending..." : "Send"}
-               </button>
+         {/* Input */}
+         <div className="w-full p-4 border-t border-border bg-white backdrop-blur supports-backdrop-filter:bg-background/60">
+            <form onSubmit={handleSubmit} className="flex items-end gap-3 w-full">
+               <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Type a message..." className="min-h-[44px] w-full bg-background" disabled={isSending} maxLength={2000} />
+               <Button type="submit" disabled={!inputValue.trim() || isSending} size="icon" className="shrink-0 h-11 w-11">
+                  <Send className="w-5 h-5" />
+               </Button>
             </form>
          </div>
-      </AdminLayout>
+      </div>
    );
 }

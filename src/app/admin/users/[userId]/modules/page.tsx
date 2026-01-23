@@ -1,8 +1,8 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import axiosInstance from "@/lib/axiosInstance";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -44,11 +44,10 @@ export default function AdminUserModulesPage() {
    return (
       <ProtectedRoute requireAdmin={true}>
          <div className="min-h-screen bg-background text-foreground">
-            <Navbar />
             <div className="max-w-7xl mx-auto px-4 py-8">
                <div className="flex items-center gap-4 mb-8">
                   <Link href="/admin/users" className="text-muted-foreground hover:text-foreground">
-                     ← Back to Users
+                     <ArrowLeft />
                   </Link>
                   <h1 className="text-3xl font-bold">User Modules</h1>
                </div>

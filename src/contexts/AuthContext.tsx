@@ -10,6 +10,7 @@ interface User {
    email: string;
    role: UserRole;
    prdStatus?: "none" | "pending" | "approved";
+   avatar?: string;
 }
 
 interface AuthContextType {

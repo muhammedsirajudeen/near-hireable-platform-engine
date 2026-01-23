@@ -27,6 +27,8 @@ export default function AdminLoginPage() {
       }
    };
 
+   console.log(`👉 rendering`);
+
    return (
       <PublicRoute>
          <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -56,15 +58,7 @@ export default function AdminLoginPage() {
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                            Password
                         </label>
-                        <input
-                           type="password"
-                           id="password"
-                           value={password}
-                           onChange={(e) => setPassword(e.target.value)}
-                           className="w-full px-4 py-3 rounded-lg border border-border bg-card text-card-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                           placeholder="Enter admin password"
-                           required
-                        />
+                        <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 rounded-lg border border-border bg-card text-card-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Enter admin password" required />
                      </div>
 
                      <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">

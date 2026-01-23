@@ -1,40 +1,15 @@
 "use client";
 
+import { useAdmin } from "@/contexts/AdminContext";
 import { useAuth } from "@/contexts/AuthContext";
-import axiosInstance from "@/lib/axiosInstance";
-import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-interface AdminSidebarProps {
-   collapsed?: boolean;
-   onToggle?: () => void;
-}
-
-export default function AdminSidebar({ collapsed = false }: AdminSidebarProps) {
+export default function AdminSidebar() {
    const pathname = usePathname();
    const router = useRouter();
    const { user, logout } = useAuth();
-   const [unreadCount, setUnreadCount] = useState(0);
-
-   // Fetch unread message count
-   useEffect(() => {
-      const fetchUnread = async () => {
-         try {
-            const response = await axiosInstance.get("/admin/chat/conversations");
-            if (response.data.success) {
-               const total = response.data.conversations.reduce((sum: number, conv: { unreadCount: number }) => sum + conv.unreadCount, 0);
-               setUnreadCount(total);
-            }
-         } catch (error) {
-            console.error("Error fetching unread count:", error);
-         }
-      };
-
-      fetchUnread();
-      const intervalId = setInterval(fetchUnread, 10000);
-      return () => clearInterval(intervalId);
-   }, []);
+   const { sidebarCollapsed, setSidebarCollapsed, unreadCount, isMobile, toggleSidebar } = useAdmin();
 
    const handleLogout = async () => {
       await logout();
@@ -81,55 +56,106 @@ export default function AdminSidebar({ collapsed = false }: AdminSidebarProps) {
       },
    ];
 
+   // Responsive Logic:
+   // Sidebar always fixed to ensure it stays in place.
+   const sidebarClasses = `
+      fixed inset-y-0 left-0 z-50
+      bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+      flex flex-col transition-all duration-300
+      ${sidebarCollapsed ? "w-16" : "w-64"}
+   `;
+
    return (
-      <aside className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
-         {/* Logo/Brand */}
-         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-3">
-               <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <aside className={sidebarClasses}>
+         {/* Logo/Header */}
+         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3 overflow-hidden">
+               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                </div>
-               {!collapsed && <span className="text-lg font-bold text-gray-900 dark:text-white">Admin Panel</span>}
+               <span className={`text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap transition-opacity duration-300 ${sidebarCollapsed ? "opacity-0 w-0" : "opacity-100"}`}>Admin Panel</span>
             </div>
+
+            {/* Toggle Button: Always visible if Expanded OR if Desktop */}
+            {(!sidebarCollapsed || !isMobile) && (
+               <button onClick={toggleSidebar} className={`p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 ${sidebarCollapsed ? "hidden group-hover:block" : ""}`}>
+                  {sidebarCollapsed ? (
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                     </svg>
+                  ) : (
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                     </svg>
+                  )}
+               </button>
+            )}
          </div>
 
          {/* Navigation */}
-         <nav className="flex-1 p-4 space-y-2">
+         <nav className="flex-1 p-2 space-y-2 overflow-y-auto overflow-x-hidden">
             {navItems.map((item) => {
                const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
                return (
-                  <Link key={item.href} href={item.href} className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? "bg-primary text-white shadow-md" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
-                     <div className="flex items-center space-x-3">
-                        <span className="shrink-0">{item.icon}</span>
-                        {!collapsed && <span className="font-medium">{item.name}</span>}
-                     </div>
-                     {!collapsed && item.badge !== undefined && item.badge > 0 && <span className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold rounded-full ${isActive ? "bg-white text-primary" : "bg-red-500 text-white"}`}>{item.badge > 99 ? "99+" : item.badge}</span>}
-                     {collapsed && item.badge !== undefined && item.badge > 0 && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
+                  <Link
+                     key={item.href}
+                     href={item.href}
+                     onClick={() => isMobile && setSidebarCollapsed(true)} // Auto-collapse on mobile nav
+                     className={`relative group flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? "bg-primary text-white shadow-md" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                     title={sidebarCollapsed ? item.name : ""}
+                  >
+                     <span className="shrink-0 flex justify-center w-6">{item.icon}</span>
+
+                     <span className={`ml-3 font-medium whitespace-nowrap transition-opacity duration-200 ${sidebarCollapsed ? "opacity-0 w-0 hidden" : "opacity-100"}`}>{item.name}</span>
+
+                     {/* Badge */}
+                     {item.badge !== undefined && item.badge > 0 && (
+                        <>
+                           {/* Expanded Badge */}
+                           {!sidebarCollapsed && <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold rounded-full bg-red-500 text-white">{item.badge > 99 ? "99+" : item.badge}</span>}
+
+                           {/* Collapsed Dot */}
+                           {sidebarCollapsed && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-gray-800 rounded-full"></span>}
+                        </>
+                     )}
+
+                     {/* Hover Tooltip for Collapsed Mode (Desktop) */}
+                     {sidebarCollapsed && !isMobile && <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-50">{item.name}</div>}
                   </Link>
                );
             })}
+
+            {/* Toggle Button for Mobile Collapsed State: Bottom Center */}
+            {sidebarCollapsed && (
+               <div className="mt-auto pt-4 flex justify-center pb-2">
+                  <button onClick={toggleSidebar} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                     <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                     </svg>
+                  </button>
+               </div>
+            )}
          </nav>
 
          {/* User section */}
-         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-3 mb-3">
-               <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
+         <div className={`p-4 border-t border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
+            <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-3"} mb-3`}>
+               <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
                   <span className="text-sm font-bold text-gray-600 dark:text-gray-300">{user?.name?.charAt(0).toUpperCase() || "A"}</span>
                </div>
-               {!collapsed && (
+               {!sidebarCollapsed && (
                   <div className="flex-1 min-w-0">
                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name || "Admin"}</p>
-                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                   </div>
                )}
             </div>
-            <button onClick={handleLogout} className={`w-full flex items-center justify-center space-x-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors ${collapsed ? "px-2" : ""}`}>
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={handleLogout} className={`w-full flex items-center justify-center space-x-2 px-2 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group relative`} title="Logout">
+               <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                </svg>
-               {!collapsed && <span className="text-sm font-medium">Logout</span>}
+               {!sidebarCollapsed && <span className="text-sm font-medium">Logout</span>}
             </button>
          </div>
       </aside>

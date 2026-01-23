@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 interface ProtectedRouteProps {
@@ -12,11 +12,18 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
    const { user, loading, isAuthenticated } = useAuth();
    const router = useRouter();
+   const pathname = usePathname();
+
+   console.log(`👉 role : `, user);
 
    useEffect(() => {
       if (!loading) {
          if (!isAuthenticated) {
-            router.push("/signin");
+            if (pathname.startsWith("/admin")) {
+               router.push("/admin/login");
+            } else {
+               router.push("/signin");
+            }
          } else if (requireAdmin && user?.role !== "admin") {
             router.push("/");
          }

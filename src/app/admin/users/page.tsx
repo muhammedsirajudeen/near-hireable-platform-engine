@@ -140,7 +140,11 @@ export default function AdminUsersPage() {
                <tbody className="divide-y divide-border">
                   {filteredUsers.map((user) => (
                      <tr key={user._id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-6 py-4">{user.name}</td>
+                        <td className="px-6 py-4">
+                           <Link href={`/admin/users/${user._id}`} className="hover:underline font-medium">
+                              {user.name}
+                           </Link>
+                        </td>
                         <td className="px-6 py-4">{user.email}</td>
                         <td className="px-6 py-4">
                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.prdStatus === "approved" ? "bg-green-100 text-green-700" : user.prdStatus === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700"}`}>{user.prdStatus}</span>

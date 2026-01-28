@@ -273,6 +273,16 @@ body {
       0 0 20px var(--glow-accent);
 }
 
+/* Scrollbar Hide Utilities */
+.no-scrollbar::-webkit-scrollbar {
+   display: none;
+}
+
+.no-scrollbar {
+   -ms-overflow-style: none; /* IE and Edge */
+   scrollbar-width: none; /* Firefox */
+}
+
 @layer base {
    * {
       @apply border-border outline-ring/50;

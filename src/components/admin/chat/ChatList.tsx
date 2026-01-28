@@ -146,7 +146,7 @@ export default function ChatList({ className }: { className?: string }) {
             </div>
          </div>
 
-         <div className="flex-1 overflow-y-auto p-3 space-y-2">
+         <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2">
             {isLoading ? (
                <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

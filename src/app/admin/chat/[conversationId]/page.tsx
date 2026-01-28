@@ -4,7 +4,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axiosInstance from "@/lib/axiosInstance";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, ExternalLink, Send, User as UserIcon } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -98,14 +99,24 @@ export default function AdminConversationPage() {
                <ArrowLeft className="w-5 h-5" />
             </Button>
             {user ? (
-               <div className="flex items-center gap-3">
-                  <Avatar>
-                     <AvatarFallback className="bg-primary/10 text-primary font-bold">{user.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                     <h2 className="font-semibold text-foreground leading-none">{user.name}</h2>
-                     <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+               <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                     <Avatar>
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">{user.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                     </Avatar>
+                     <div>
+                        <h2 className="font-semibold text-foreground leading-none">{user.name}</h2>
+                        <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+                     </div>
                   </div>
+                  <Link href={`/admin/users/${user.id}`}>
+                     <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
+                        View Profile <ExternalLink className="w-4 h-4" />
+                     </Button>
+                     <Button variant="ghost" size="icon" className="sm:hidden">
+                        <UserIcon className="w-5 h-5" />
+                     </Button>
+                  </Link>
                </div>
             ) : (
                <div className="flex items-center gap-3">

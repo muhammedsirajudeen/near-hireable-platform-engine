@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosInstance from "@/lib/axiosInstance";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,11 @@ export default function ChatList({ className }: { className?: string }) {
    const [isNewChatOpen, setIsNewChatOpen] = useState(false);
    const [users, setUsers] = useState<User[]>([]);
    const [usersLoading, setUsersLoading] = useState(false);
-   const [searchQuery, setSearchQuery] = useState("");
+   const [userSearchQuery, setUserSearchQuery] = useState("");
+
+   // Conversation filter state
+   const [conversationSearchQuery, setConversationSearchQuery] = useState("");
+   const [unreadFilter, setUnreadFilter] = useState(false);
 
    const fetchConversations = async () => {
       try {
@@ -85,7 +90,13 @@ export default function ChatList({ className }: { className?: string }) {
       router.push(`/admin/chat/${conversationId}`);
    };
 
-   const filteredUsers = users.filter((user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()) || user.email.toLowerCase().includes(searchQuery.toLowerCase()));
+   const filteredUsers = users.filter((user) => user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || user.email.toLowerCase().includes(userSearchQuery.toLowerCase()));
+
+   const filteredConversations = conversations.filter((conv) => {
+      const matchesSearch = (conv.userName || "").toLowerCase().includes(conversationSearchQuery.toLowerCase());
+      const matchesUnread = !unreadFilter || conv.unreadCount > 0;
+      return matchesSearch && matchesUnread;
+   });
 
    const existingConversationUserIds = new Set(conversations.map((c) => c.userId));
 
@@ -106,16 +117,33 @@ export default function ChatList({ className }: { className?: string }) {
 
    return (
       <div className={cn("flex flex-col h-full bg-card border-r border-border", className)}>
-         <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
-            <div>
-               <h2 className="text-xl font-bold tracking-tight text-foreground">Messages</h2>
-               <p className="text-xs text-muted-foreground">{conversations.length} conversations</p>
+         <div className="p-4 border-b border-border flex flex-col gap-3 shrink-0">
+            <div className="flex items-center justify-between">
+               <div>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">Messages</h2>
+                  <p className="text-xs text-muted-foreground">{conversations.length} conversations</p>
+               </div>
+               <button onClick={() => setIsNewChatOpen(true)} className="p-2 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+               </button>
             </div>
-            <button onClick={() => setIsNewChatOpen(true)} className="p-2 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-               </svg>
-            </button>
+
+            {/* Conversation Search & Filter */}
+            <div className="flex items-center gap-2">
+               <div className="relative flex-1">
+                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input type="text" placeholder="Search..." value={conversationSearchQuery} onChange={(e) => setConversationSearchQuery(e.target.value)} className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary" />
+               </div>
+               <button onClick={() => setUnreadFilter(!unreadFilter)} className={cn("p-1.5 rounded-md transition-colors border", unreadFilter ? "bg-primary/10 border-primary/20 text-primary" : "bg-transparent border-input text-muted-foreground hover:bg-muted")} title="Filter Unread">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+               </button>
+            </div>
          </div>
 
          <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -130,27 +158,29 @@ export default function ChatList({ className }: { className?: string }) {
                      Retry
                   </button>
                </div>
-            ) : conversations.length === 0 ? (
+            ) : filteredConversations.length === 0 ? (
                <div className="text-center py-8 px-4">
-                  <p className="text-sm text-muted-foreground">No messages yet</p>
+                  <p className="text-sm text-muted-foreground">No messages found</p>
                </div>
             ) : (
-               conversations.map((conv) => {
+               filteredConversations.map((conv) => {
                   const isActive = pathname === `/admin/chat/${conv.conversationId}`;
                   return (
                      <Link key={conv.conversationId} href={`/admin/chat/${conv.conversationId}`} className={cn("block rounded-xl p-3 transition-all duration-200", isActive ? "bg-primary/10 border-primary/20 shadow-sm" : "hover:bg-muted")}>
-                        <div className="flex items-start justify-between mb-1">
-                           {/* <Avatar>
-                              <AvatarImage src={""} />
-                              <AvatarFallback>{}</AvatarFallback>
-                           </Avatar> */}
-                           <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center justify-between">
+                           <div className="flex flex-col gap-2 min-w-0 flex-1">
                               <span className="font-semibold text-foreground truncate">{conv.userName || "Unknown User"}</span>
-                              {conv.unreadCount > 0 && <span className="shrink-0 w-2 h-2 rounded-full bg-primary/50" />}
+                              <p className={cn("text-xs truncate text-muted-foreground", isActive ? "text-foreground font-medium" : "text-muted-foreground")}>{conv.lastMessage}</p>
                            </div>
-                           <span className="text-[10px] text-muted-foreground shrink-0">{formatTime(conv.lastMessageAt)}</span>
+                           <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatTime(conv.lastMessageAt)}</span>
+                              {conv.unreadCount > 0 && (
+                                 <Badge variant="default" className="text-[10px] h-4 px-1.5 min-w-4 flex items-center justify-center">
+                                    {conv.unreadCount}
+                                 </Badge>
+                              )}
+                           </div>
                         </div>
-                        <p className={cn("text-xs line-clamp-1 break-all", isActive ? "text-foreground" : "text-muted-foreground")}>{conv.lastMessage}</p>
                      </Link>
                   );
                })
@@ -169,7 +199,7 @@ export default function ChatList({ className }: { className?: string }) {
                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                      </svg>
-                     <input type="text" placeholder="Search users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+                     <input type="text" placeholder="Search users..." value={userSearchQuery} onChange={(e) => setUserSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
                   </div>
                </div>
 
@@ -179,7 +209,7 @@ export default function ChatList({ className }: { className?: string }) {
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                      </div>
                   ) : filteredUsers.length === 0 ? (
-                     <div className="text-center py-8 text-muted-foreground text-sm">{searchQuery ? "No users found" : "No users available"}</div>
+                     <div className="text-center py-8 text-muted-foreground text-sm">{userSearchQuery ? "No users found" : "No users available"}</div>
                   ) : (
                      <div className="space-y-1">
                         {filteredUsers.map((user) => {

@@ -39,6 +39,10 @@ export default function AdminPRDsPage() {
    const [newNoteContent, setNewNoteContent] = useState<{ [key: string]: string }>({});
    const [showNoteInput, setShowNoteInput] = useState<string | null>(null);
 
+   const [searchQuery, setSearchQuery] = useState("");
+   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+
    useEffect(() => {
       fetchPRDs();
    }, []);
@@ -56,6 +60,20 @@ export default function AdminPRDsPage() {
          setLoading(false);
       }
    };
+
+   // ... status updates and notes handlers ...
+
+   const filteredPrds = prds
+      .filter((prd) => {
+         const matchesSearch = (prd.userId?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || (prd.userId?.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+         const matchesStatus = statusFilter === "all" || prd.status === statusFilter;
+         return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+         const dateA = new Date(a.submittedAt).getTime();
+         const dateB = new Date(b.submittedAt).getTime();
+         return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+      });
 
    const handleStatusUpdate = async (prdId: string, status: "approved" | "rejected") => {
       try {
@@ -115,10 +133,32 @@ export default function AdminPRDsPage() {
 
    return (
       <div className="space-y-4 pt-4">
-         <div className="flex items-center justify-between">
+         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
                <h2 className="text-2xl font-bold tracking-tight text-foreground">PRD Management</h2>
                <p className="text-muted-foreground">Review and manage user PRDs</p>
+            </div>
+         </div>
+
+         {/* Filters and Search */}
+         <div className="flex flex-col gap-3 sm:flex-row bg-card p-3 rounded-lg border border-border">
+            <div className="relative flex-1">
+               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+               </svg>
+               <input type="text" placeholder="Search by user or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary" />
+            </div>
+            <div className="flex gap-3">
+               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+               </select>
+               <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as any)} className="px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+               </select>
             </div>
          </div>
 
@@ -126,16 +166,16 @@ export default function AdminPRDsPage() {
             <div className="flex items-center justify-center py-12">
                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-         ) : prds.length === 0 ? (
+         ) : filteredPrds.length === 0 ? (
             <div className="text-center py-12">
                <svg className="mx-auto h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                </svg>
-               <p className="mt-4 text-muted-foreground">No PRDs submitted yet</p>
+               <p className="mt-4 text-muted-foreground">No PRDs found</p>
             </div>
          ) : (
             <div className="space-y-4">
-               {prds.map((prd) => (
+               {filteredPrds.map((prd) => (
                   <div key={prd._id} className="bg-card text-card-foreground rounded-xl border border-border overflow-hidden">
                      {/* PRD Header */}
                      <div className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setExpandedPrdId(expandedPrdId === prd._id ? null : prd._id)}>

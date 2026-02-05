@@ -187,7 +187,7 @@ export default function AdminConversationPage() {
       return () => window.removeEventListener("keydown", handleKeyDown);
    }, []);
 
-   const handleSubmit = async (e: React.FormEvent) => {
+   const handleSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
       e.preventDefault();
       if (!inputValue.trim() || isSending) return;
 
@@ -303,7 +303,21 @@ export default function AdminConversationPage() {
                      ))}
                   </DropdownMenuContent>
                </DropdownMenu>
-               <Input ref={inputRef} value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Type a message..." className="min-h-[44px] w-full bg-background" disabled={isSending} maxLength={2000} />
+               <Input
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                     if (e.key === "End") {
+                        e.preventDefault();
+                        handleSubmit(e);
+                     }
+                  }}
+                  placeholder="Type a message..."
+                  className="min-h-[44px] w-full bg-background"
+                  disabled={isSending}
+                  maxLength={2000}
+               />
                <Button type="submit" disabled={!inputValue.trim() || isSending} size="icon" className="shrink-0 h-11 w-11">
                   <Send className="w-5 h-5" />
                </Button>

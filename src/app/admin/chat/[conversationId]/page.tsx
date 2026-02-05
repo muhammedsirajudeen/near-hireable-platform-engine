@@ -28,7 +28,7 @@ interface UserInfo {
 const TEMPLATES = [
    {
       label: "Any Update",
-      text: "Just checking in to see if there are any updates on this.",
+      text: "Hey, please share an update when you get a chance.",
    },
    {
       label: "Gentle Reminder",
@@ -200,7 +200,10 @@ export default function AdminConversationPage() {
             message,
          });
          if (response.data.success) {
-            setMessages((prev) => [...prev, response.data.message]);
+            setMessages((prev) => {
+               if (prev.some((m) => m.id === response.data.message.id)) return prev;
+               return [...prev, response.data.message];
+            });
          }
       } catch (err) {
          console.error("Error sending message:", err);

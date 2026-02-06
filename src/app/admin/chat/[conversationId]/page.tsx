@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import axiosInstance from "@/lib/axiosInstance";
+import { formatMessageTime } from "@/utils/messageDateFormatter";
 import { ArrowLeft, ExternalLink, MessageSquarePlus, Send, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -276,7 +277,7 @@ export default function AdminConversationPage() {
                      <div key={msg.id} className={`flex ${msg.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
                         <div className={`max-w-[70%] px-4 py-3 rounded-2xl ${msg.senderRole === "admin" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
                            <p className="whitespace-pre-wrap wrap-break-word leading-relaxed">{msg.message}</p>
-                           <p className={`text-[10px] mt-1.5 ${msg.senderRole === "admin" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                           <p className={`text-[10px] mt-1.5 ${msg.senderRole === "admin" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{formatMessageTime(msg.createdAt)}</p>
                         </div>
                      </div>
                   ))}

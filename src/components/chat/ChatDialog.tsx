@@ -3,6 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import { UserRole } from "@/types/enums/role.enum";
+import { formatMessageTime } from "@/utils/messageDateFormatter";
 import { useEffect, useRef, useState } from "react";
 
 export default function ChatDialog() {
@@ -91,7 +92,7 @@ export default function ChatDialog() {
                      <div key={msg.id} className={`flex ${msg.senderRole === "user" ? "justify-end" : "justify-start"}`}>
                         <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${msg.senderRole === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-background border border-border text-foreground rounded-bl-md"}`}>
                            <p className="whitespace-pre-wrap wrap-break-word">{msg.message}</p>
-                           <p className={`text-[10px] mt-1 ${msg.senderRole === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                           <p className={`text-[10px] mt-1 ${msg.senderRole === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{formatMessageTime(msg.createdAt)}</p>
                         </div>
                      </div>
                   ))}
